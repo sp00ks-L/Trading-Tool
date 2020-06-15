@@ -3,15 +3,6 @@ import importlib
 import MetaTrader5 as mt5
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QGridLayout
-from PyQt5.QtWidgets import QLineEdit
-from PyQt5.QtWidgets import QPushButton
-from PyQt5.QtWidgets import QVBoxLayout
-
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtWidgets import QWidget
 
 UI = importlib.import_module('traderUI5')
 trade = importlib.import_module('spooksFX')
@@ -25,14 +16,12 @@ leverage = mt5.account_info()._asdict()['leverage']
 Calc = tradeCalc.TradingTool(balance=balance, leverage=leverage)
 
 
-# price, lot, sl = demo.position_size(134.000, 134.150, 1.0)
-
-
 class TraderControl:
 
     def __init__(self, view):
         """Controller initializer."""
         self._view = view
+        self._view.riskSpinBox.setValue(1.0)
         # Connect signals and slots
         self.set_order_type()
         self._connectSignals()
@@ -66,22 +55,46 @@ class TraderControl:
     def set_order_type(self):
         if self._view.orderTypeComboBox.currentText() == "Buy":
             Trader.OrderType.order_type = mt5.ORDER_TYPE_BUY
+            self._view.priceSpinBox.setValue(mt5.symbol_info_tick('GBPJPY').bid)
         if self._view.orderTypeComboBox.currentText() == "Sell":
             Trader.OrderType.order_type = mt5.ORDER_TYPE_SELL
+            self._view.priceSpinBox.setValue(mt5.symbol_info_tick('GBPJPY').ask)
         if self._view.orderTypeComboBox.currentText() == "Buy Limit":
             Trader.OrderType.order_type = mt5.ORDER_TYPE_BUY_LIMIT
+            self._view.priceSpinBox.setValue(mt5.symbol_info_tick('GBPJPY').bid)
         if self._view.orderTypeComboBox.currentText() == "Sell Limit":
             Trader.OrderType.order_type = mt5.ORDER_TYPE_SELL_LIMIT
+            self._view.priceSpinBox.setValue(mt5.symbol_info_tick('GBPJPY').ask)
         if self._view.orderTypeComboBox.currentText() == "Buy Stop":
             Trader.OrderType.order_type = mt5.ORDER_TYPE_BUY_STOP
+            self._view.priceSpinBox.setValue(mt5.symbol_info_tick('GBPJPY').bid)
         if self._view.orderTypeComboBox.currentText() == "Sell Stop":
             Trader.OrderType.order_type = mt5.ORDER_TYPE_SELL_STOP
+            self._view.priceSpinBox.setValue(mt5.symbol_info_tick('GBPJPY').ask)
 
     def order_calc(self):
         # TODO if no price given, use current price
-        # open_price, sl, risk
         Trader.Volume.volume = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk)
         Trader.check_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, Trader.Volume.volume)
+
+    def exec_trade(self):
+        if Trader.OrderType.order_type == mt5.ORDER_TYPE_SELL:
+            sell = mt5.symbol_info_tick("GBPJPY").bid
+            lot = Calc.position_size(sell, Trader.TakeProfit.tp, Trader.Risk.risk)
+            Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot)
+        elif Trader.OrderType.order_type == mt5.ORDER_TYPE_BUY:
+            buy = mt5.symbol_info_tick("GBPJPY").ask
+            lot = Calc.position_size(buy, Trader.TakeProfit.tp, Trader.Risk.risk)
+            Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot)
+
+    def exec_order(self):
+        # action, symbol, open_price, lot
+        if Trader.OrderType.order_type == mt5.ORDER_TYPE_BUY_STOP:
+            lot = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk)
+            Trader.place_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, lot)
+        if Trader.OrderType.order_type == mt5.ORDER_TYPE_SELL_STOP:
+            lot = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk)
+            Trader.place_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, lot)
 
     def _connectSignals(self):
         self._view.contractComboBox.currentIndexChanged.connect(lambda: self.enable_date())
@@ -93,6 +106,14 @@ class TraderControl:
         self._view.setPriceButton.clicked.connect(lambda: self.set_price())
         self._view.checkPosButton.clicked.connect(lambda: self.order_calc())
         self._view.halfRiskButton.clicked.connect(lambda: Trader.half_risk())
+        self._view.openTradeButton.clicked.connect(lambda: self.exec_trade())
+        self._view.runnerButton.clicked.connect(lambda: Trader.runner())
+        self._view.closeAllButton.clicked.connect(lambda: Trader.close_all())
+        self._view.closeHalfButton.clicked.connect(lambda: Trader.close_half())
+        self._view.openOrderButton.clicked.connect(lambda: self.exec_order())
+        self._view.getOrdersButton.clicked.connect(lambda: Trader.get_orders())
+        self._view.getPositionsButton.clicked.connect(lambda: Trader.get_positions())
+        self._view.autoBeButton.clicked.connect(lambda: Trader.auto_be())
 
 
 def main():
