@@ -13,9 +13,8 @@ calc = importlib.import_module("Trading Tool")
 
 
 # TODO
-#   Create an error message for when order send calls fail
+#   Create a 'you didnt fill this in' error message to be called when no TP, SL etc is entered
 #   Create a function that sets a TP corresponding to a specific risk : reward
-#   Create a Auto BE function
 #   Make ' or " consistent
 #   Look into the enumerate function auto starting at 1 rather than the count + 1 in get_positions and get_orders
 #   Think about if we want modify_order() to use the inbuilt modify call or if we want to 'modify'
@@ -24,6 +23,9 @@ calc = importlib.import_module("Trading Tool")
 #   Getter doesnt want to return 3dp, will have to do it in place and check if 2dp is okay
 #   Check if setting TP to 0 will leave the TP empty. If not, what does
 #   Maybe add 'doc strings' and 'func strings'
+#   Modify the the get_order / get_pos funcs to also show percent risk in that trade
+#   Make the functions that print to the terminal clear the terminal each call
+#   Implement the GTC feature where you can alter the contract fill time
 
 
 class TradeSession:
@@ -137,9 +139,9 @@ class TradeSession:
             print(f"   Position {count + 1} - {self.Orders(mt5.TradePosition(order).type).name}")
             print(f"Ticket      : {mt5.TradePosition(order).ticket}")
             print(f"Volume      : {mt5.TradePosition(order).volume}")
-            print(f"Open Price  : {mt5.TradePosition(order).price_open}")
-            print(f"TP          : {mt5.TradePosition(order).tp}")
-            print(f"SL          : {mt5.TradePosition(order).sl}")
+            print(f"Open Price  : {mt5.TradePosition(order).price_open:.3f}")
+            print(f"TP          : {mt5.TradePosition(order).tp:.3f}")
+            print(f"SL          : {mt5.TradePosition(order).sl:.3f}")
             print("----------------------------")
 
     def get_orders(self):
@@ -147,9 +149,9 @@ class TradeSession:
             print(f"Position {count + 1} - {self.Orders(mt5.TradeOrder(order).type).name}")
             print(f"Ticket      : {mt5.TradeOrder(order).ticket}")
             print(f"Volume      : {mt5.TradeOrder(order).volume_initial}")
-            print(f"Open Price  : {mt5.TradeOrder(order).price_open}")
-            print(f"TP          : {mt5.TradeOrder(order).tp}")
-            print(f"SL          : {mt5.TradeOrder(order).sl}")
+            print(f"Open Price  : {mt5.TradeOrder(order).price_open:.3f}")
+            print(f"TP          : {mt5.TradeOrder(order).tp:.3f}")
+            print(f"SL          : {mt5.TradeOrder(order).sl:.3f}")
             print("----------------------------")
 
     def check_order(self, action, symbol, open_price, lot):
@@ -189,7 +191,7 @@ class TradeSession:
 
             }
 
-        print(f"Action              :   {self.Orders(Trader.OrderType.order_type).name} {symbol}")
+        print(f"Action              :   {self.Orders(Trader1.OrderType.order_type).name} {symbol}")
         print(f"Volume              :   {lot} @ {self.Risk.risk}%")
         print(f"Leverage            :   {leverage}")
         print(f"Required Margin     :   {round((lot * 100000) / leverage, 1)}")
@@ -202,12 +204,11 @@ class TradeSession:
             print(f"Stop Loss           :   {self.StopLoss.sl:.3f}")
             print(f"Take Profit         :   {self.TakeProfit.tp:.3f}")
 
-
-
-
     def open_trade(self, action, symbol, lot):
+        mt5.initialize()
+        print("it is reaching open_trade()")
 
-        if action == "BUY":
+        if action == mt5.ORDER_TYPE_BUY:
             trade_type = mt5.ORDER_TYPE_BUY
             price = mt5.symbol_info_tick(symbol).ask
             request = {
@@ -218,14 +219,14 @@ class TradeSession:
                 "price":        price,
                 "sl":           self.StopLoss.sl,
                 "tp":           self.TakeProfit.tp,
-                "deviation":    self.Deviation.dev,
+                "deviation":    int(self.Deviation.dev),
                 "type_time":    mt5.ORDER_TIME_GTC,
                 "type_filling": mt5.ORDER_FILLING_RETURN,
                 "magic":        self.magic,
                 "comment":      "python script long",
 
             }
-        elif action == "SELL":
+        elif action == mt5.ORDER_TYPE_SELL:
             trade_type = mt5.ORDER_TYPE_SELL
             price = mt5.symbol_info_tick(symbol).bid
             request = {
@@ -236,22 +237,22 @@ class TradeSession:
                 "price":        price,
                 "sl":           self.StopLoss.sl,
                 "tp":           self.TakeProfit.tp,
-                "deviation":    self.Deviation.dev,
+                "deviation":    int(self.Deviation.dev),
                 "type_time":    mt5.ORDER_TIME_GTC,
                 "type_filling": mt5.ORDER_FILLING_RETURN,
                 "magic":        self.magic,
                 "comment":      "python script short",
 
             }
-
         result = mt5.order_send(request)
+
         self.order_error_check(result)
 
     def place_order(self, action, symbol, open_price, lot):
         point = mt5.symbol_info(symbol).point
         price = open_price
-
-        if action == "BUY LIMIT":
+        print("entered the place_order()")
+        if action == mt5.ORDER_TYPE_BUY_LIMIT:
             trade_type = mt5.ORDER_TYPE_BUY_LIMIT
 
             request = {
@@ -269,7 +270,7 @@ class TradeSession:
 
             }
 
-        elif action == "SELL LIMIT":
+        elif action == mt5.ORDER_TYPE_SELL_LIMIT:
             trade_type = mt5.ORDER_TYPE_SELL_LIMIT
 
             request = {
@@ -287,7 +288,7 @@ class TradeSession:
 
             }
 
-        elif action == "BUY STOP":
+        elif action == mt5.ORDER_TYPE_BUY_STOP:
             trade_type = mt5.ORDER_TYPE_BUY_STOP
 
             request = {
@@ -304,9 +305,8 @@ class TradeSession:
                 "comment":      "python buy stop",
 
             }
-        elif action == "SELL STOP":
+        elif action == mt5.ORDER_TYPE_SELL_STOP:
             trade_type = mt5.ORDER_TYPE_SELL_STOP
-
             request = {
                 "action":       mt5.TRADE_ACTION_PENDING,
                 "symbol":       symbol,
@@ -654,74 +654,41 @@ class TradeSession:
                     }
                 result = mt5.order_send(request)
 
-    def half_risk(self, ticket=1):
-        # TODO Probably remove the ticket implementation
-        if ticket == 1:
-            for pos in mt5.positions_get():
-                position_id = mt5.TradePosition(pos).ticket
-                symbol = mt5.TradePosition(pos).symbol
-                tp = mt5.TradePosition(pos).tp
-                sl = mt5.TradePosition(pos).sl
-                order = mt5.TradePosition(pos).type
-                price = mt5.TradePosition(pos).price_open
+    def half_risk(self):
+        for pos in mt5.positions_get():
+            position_id = mt5.TradePosition(pos).ticket
+            symbol = mt5.TradePosition(pos).symbol
+            tp = mt5.TradePosition(pos).tp
+            sl = mt5.TradePosition(pos).sl
+            order = mt5.TradePosition(pos).type
+            price = mt5.TradePosition(pos).price_open
 
-                if order == 0:  # Buy
-                    diff = round(price - sl, 3)
-                    request = {
-                        "action":   mt5.TRADE_ACTION_SLTP,
-                        "symbol":   symbol,
-                        "position": position_id,
-                        "sl":       round(sl + (diff / 2), 3),
-                        "tp":       tp,
-                        "magic":    self.magic,
-                        "comment":  f"python half risk {symbol}"
-                    }
-                if order == 1:  # Sell
-                    diff = round(sl - price, 3)
-                    request = {
-                        "action":   mt5.TRADE_ACTION_SLTP,
-                        "symbol":   symbol,
-                        "position": position_id,
-                        "sl":       round(sl - (diff / 2), 3),
-                        "tp":       tp,
-                        "magic":    self.magic,
-                        "comment":  f"python half risk {symbol}"
-                    }
+            if order == 0:  # Buy
+                diff = round(price - sl, 3)
+                request = {
+                    "action":   mt5.TRADE_ACTION_SLTP,
+                    "symbol":   symbol,
+                    "position": position_id,
+                    "sl":       round(sl + (diff / 2), 3),
+                    "tp":       tp,
+                    "magic":    self.magic,
+                    "comment":  f"python half risk {symbol}"
+                }
+            if order == 1:  # Sell
+                diff = round(sl - price, 3)
+                request = {
+                    "action":   mt5.TRADE_ACTION_SLTP,
+                    "symbol":   symbol,
+                    "position": position_id,
+                    "sl":       round(sl - (diff / 2), 3),
+                    "tp":       tp,
+                    "magic":    self.magic,
+                    "comment":  f"python half risk {symbol}"
+                }
 
-            else:
-                for pos in mt5.positions_get(ticket=ticket):
-                    position_id = ticket
-                    symbol = mt5.TradePosition(pos).symbol
-                    tp = mt5.TradePosition(pos).tp
-                    sl = mt5.TradePosition(pos).sl
-                    order = mt5.TradePosition(pos).type
-                    price = mt5.TradePosition(pos).price_open
+        result = mt5.order_send(request)
 
-                    if order == 0:  # Buy
-                        diff = round(price - sl, 3)
-                        request = {
-                            "action":   mt5.TRADE_ACTION_SLTP,
-                            "symbol":   symbol,
-                            "position": position_id,
-                            "sl":       round(sl + (diff / 2), 3),
-                            "tp":       tp,
-                            "magic":    self.magic,
-                            "comment":  f"python half risk {symbol}"
-                        }
-                    if order == 1:  # Sell
-                        diff = round(sl - price, 3)
-                        request = {
-                            "action":   mt5.TRADE_ACTION_SLTP,
-                            "symbol":   symbol,
-                            "position": position_id,
-                            "sl":       round(sl - (diff / 2), 3),
-                            "tp":       tp,
-                            "magic":    self.magic,
-                            "comment":  f"python half risk {symbol}"
-                        }
-            result = mt5.order_send(request)
-
-    def runner2(self):
+    def runner(self):
         # Automatically closes 75% of position, sets SL to open price + 20 points and tp to local high/low
         # TODO Double check the TP levels are being calculated correctly
         for pos in mt5.positions_get():
@@ -735,14 +702,14 @@ class TradeSession:
             ask = mt5.symbol_info_tick(symbol).ask
             current_price = mt5.TradePosition(pos).price_current
             pct_close = 75
-            sl_points = 50
+            sl_points = 30
             tp_points = 500
 
             if order == 0:  # Buy
-                new_sl = round(price + 20 * point, 3)
+                new_sl = round(price + sl_points * point, 3)
                 if current_price < new_sl:
                     print("Desired SL is under current price")
-                    sys.exit(0)
+                    # sys.exit(0)
                 else:
                     self.close_custom_pct(pct_close, ticket=position_id)
                     request = {
@@ -758,7 +725,7 @@ class TradeSession:
                 new_sl = round(price - sl_points * point, 3)
                 if current_price > new_sl:
                     print("Desired SL is over current price")
-                    sys.exit(0)
+                    # sys.exit(0)
                 else:
                     self.close_custom_pct(pct_close, ticket=position_id)
                     request = {
@@ -773,12 +740,14 @@ class TradeSession:
 
             try:
                 result = mt5.order_send(request)
+                self.order_error_check(result)
             except UnboundLocalError:
                 print(f"Desired SL      : {new_sl}")
                 print(f"Current Price   : {mt5.TradePosition(pos).price_current}")
 
-    def order_error_check(self, result):
-        if result.retcode != mt5.TRADE_RETCODE_DONE:
+    @staticmethod
+    def order_error_check(result):
+        if result is not None and result.retcode != mt5.TRADE_RETCODE_DONE:
             print(f"Order_send failed.  Retcode :   {result.retcode}")
             result_dict = result._asdict()
             for field in result_dict.keys():
@@ -787,124 +756,28 @@ class TradeSession:
                     traderequest_dict = result_dict[field]._asdict()
                     for item in traderequest_dict:
                         print(f"Trade request: {item}   -   {traderequest_dict[item]}")
-        print("Order_send complete")
+        elif result is not None and result.retcode == mt5.TRADE_RETCODE_DONE:
+            print("Order_send() successful")
 
-
-def runner(self, percent_close, sl_points, tp_points, ticket=1):
-    if ticket == 1:
+    def auto_be(self):
         for pos in mt5.positions_get():
             position_id = mt5.TradePosition(pos).ticket
             symbol = mt5.TradePosition(pos).symbol
-            order = mt5.TradePosition(pos).type
-            point = mt5.symbol_info(symbol).point
             tp = mt5.TradePosition(pos).tp
+            sl = mt5.TradePosition(pos).sl
+            order = mt5.TradePosition(pos).type
             price = mt5.TradePosition(pos).price_open
+            point = mt5.symbol_info(symbol).point
 
-            if order == 0:  # Buy
-                new_sl = round(price + sl_points * point, 3)
-                if mt5.TradePosition(pos).price_current < new_sl:
-                    print("Desired SL is under current price")
-                    sys.exit(0)
-                else:
-                    self.close_custom_pct(percent_close, ticket=position_id)
-                    request = {
-                        "action":   mt5.TRADE_ACTION_SLTP,
-                        "symbol":   symbol,
-                        "position": position_id,
-                        "sl":       new_sl,
-                        "tp":       round(tp + tp_points * point, 3),
-                        "magic":    self.magic,
-                        "comment":  f"python runner {symbol}"
-                    }
-            if order == 1:  # Sell
-                new_sl = round(price - sl_points * point, 3)
-                if mt5.TradePosition(pos).price_current > new_sl:
-                    print("Desired SL is over current price")
-                    mt5.shutdown()
-                    sys.exit(0)
-                else:
-                    self.close_custom_pct(percent_close, ticket=position_id)
-                    request = {
-                        "action":   mt5.TRADE_ACTION_SLTP,
-                        "symbol":   symbol,
-                        "position": position_id,
-                        "sl":       new_sl,
-                        "tp":       round(tp - (tp_points * point), 3),
-                        "magic":    self.magic,
-                        "comment":  f"python runner {symbol}"
-                    }
-
-        else:
-            for pos in mt5.positions_get(ticket=ticket):
-                position_id = ticket
-                symbol = mt5.TradePosition(pos).symbol
-                order = mt5.TradePosition(pos).type
-                point = mt5.symbol_info(symbol).point
-                tp = mt5.TradePosition(pos).tp
-                price = mt5.TradePosition(pos).price_open
-
-                if order == 0:  # Buy
-                    new_sl = round(price + sl_points * point, 3)
-                    if mt5.TradePosition(pos).price_current < new_sl:
-                        print("Desired SL is under current price")
-                        sys.exit(0)
-                    else:
-                        self.close_custom_pct(percent_close, ticket=position_id)
-                        request = {
-                            "action":   mt5.TRADE_ACTION_SLTP,
-                            "symbol":   symbol,
-                            "position": position_id,
-                            "sl":       new_sl,
-                            "tp":       round(tp + tp_points * point, 3),
-                            "magic":    self.magic,
-                            "comment":  f"python runner {symbol}"
-                        }
-                if order == 1:  # Sell
-                    new_sl = round(price - sl_points * point, 3)
-                    if mt5.TradePosition(pos).price_current > new_sl:
-                        print("Desired SL is over current price")
-                        mt5.shutdown()
-                        sys.exit(0)
-                    else:
-                        self.close_custom_pct(percent_close, ticket=position_id)
-                        request = {
-                            "action":   mt5.TRADE_ACTION_SLTP,
-                            "symbol":   symbol,
-                            "position": position_id,
-                            "sl":       new_sl,
-                            "tp":       round(tp - (tp_points * point), 3),
-                            "magic":    self.magic,
-                            "comment":  f"python runner {symbol}"
-                        }
-        try:
+            request = {
+                "action":   mt5.TRADE_ACTION_SLTP,
+                "symbol":   symbol,
+                "position": position_id,
+                "sl":       round(price + 5 * point, 3),
+                "tp":       tp,
+                "magic":    self.magic,
+                "comment":  f"python auto BE {symbol}"
+            }
             result = mt5.order_send(request)
-        except UnboundLocalError:
-            print(f"Desired SL      : {new_sl}")
-            print(f"Current Price   : {mt5.TradePosition(pos).price_current}")
-
-
-Trader = TradeSession(916848650)
-
-mt5.initialize()
-
-balance = mt5.account_info()._asdict()['balance']
-leverage = mt5.account_info()._asdict()['leverage']
-
-demo = calc.TradingTool(balance=balance, leverage=leverage)
-
-# buy 134.150
-# Trader.StopLoss.sl = 133.950
-# Trader.TakeProfit.tp = 134.350
-# Trader.Deviation.dev = 1
-# Trader.OpenPrice.price = 134.000
-# Trader.OrderType.order_type = mt5.ORDER_TYPE_BUY
-# Trader.Risk.risk = 1.0
-
-# lot = demo.position_size(Trader.OpenPrice.price, Trader.StopLoss.sl, Trader.Risk.risk)
-
-# Trader.open_trade('SELL', 'GBPJPY', lot, sl, 133.800, 5)
-# Trader.check_order("BUY", 'GBPJPY', Trader.OpenPrice.price, lot)
-# Trader.close_all()
-# Trader.runner(75, 5, 500)
-
-# print(Trader.Orders(Trader.OrderType.order_type).name)
+            self.order_error_check(result)
+            
