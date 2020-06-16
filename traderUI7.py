@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'traderTool.ui'
+# Form implementation generated from reading ui file 'tTool.ui'
 #
 # Created by: PyQt5 UI code generator 5.9.2
 #
@@ -148,7 +148,7 @@ class Ui_MainWindow(object):
                                            "font: 75 14pt \"Adobe Gothic Std B\";")
         self.closeHalfButton.setObjectName("closeHalfButton")
         self.autoBeButton = QtWidgets.QPushButton(self.centralwidget)
-        self.autoBeButton.setGeometry(QtCore.QRect(230, 530, 91, 85))
+        self.autoBeButton.setGeometry(QtCore.QRect(330, 530, 91, 85))
         font = QtGui.QFont()
         font.setFamily("Adobe Gothic Std B")
         font.setPointSize(14)
@@ -161,7 +161,7 @@ class Ui_MainWindow(object):
                                         "font: 75 14pt \"Adobe Gothic Std B\";")
         self.autoBeButton.setObjectName("autoBeButton")
         self.runnerButton = QtWidgets.QPushButton(self.centralwidget)
-        self.runnerButton.setGeometry(QtCore.QRect(30, 530, 91, 85))
+        self.runnerButton.setGeometry(QtCore.QRect(130, 530, 91, 85))
         font = QtGui.QFont()
         font.setFamily("Adobe Gothic Std B")
         font.setPointSize(14)
@@ -174,7 +174,7 @@ class Ui_MainWindow(object):
                                         "font: 75 14pt \"Adobe Gothic Std B\";")
         self.runnerButton.setObjectName("runnerButton")
         self.partialTPButton = QtWidgets.QPushButton(self.centralwidget)
-        self.partialTPButton.setGeometry(QtCore.QRect(130, 530, 91, 85))
+        self.partialTPButton.setGeometry(QtCore.QRect(230, 530, 91, 85))
         font = QtGui.QFont()
         font.setFamily("Adobe Gothic Std B")
         font.setPointSize(14)
@@ -200,7 +200,7 @@ class Ui_MainWindow(object):
                                                "font: 75 14pt \"Adobe Gothic Std B\";")
         self.targetAtRatioButton.setObjectName("targetAtRatioButton")
         self.halfRiskButton = QtWidgets.QPushButton(self.centralwidget)
-        self.halfRiskButton.setGeometry(QtCore.QRect(330, 530, 91, 85))
+        self.halfRiskButton.setGeometry(QtCore.QRect(430, 530, 91, 85))
         palette = QtGui.QPalette()
         brush = QtGui.QBrush(QtGui.QColor(0, 170, 127))
         brush.setStyle(QtCore.Qt.SolidPattern)
@@ -393,7 +393,7 @@ class Ui_MainWindow(object):
         self.setDevButton.setStyleSheet("background-color: rgb(252, 215, 26);\n"
                                         "border-color: rgb(0, 0, 0);\n"
                                         "font: 75 14pt \"Adobe Gothic Std B\";")
-        self.setDevButton.setObjectName("checkPosButton_2")
+        self.setDevButton.setObjectName("setDevButton")
         self.orderTypeComboBox = QtWidgets.QComboBox(self.centralwidget)
         self.orderTypeComboBox.setGeometry(QtCore.QRect(330, 160, 191, 61))
         self.orderTypeComboBox.setLayoutDirection(QtCore.Qt.LeftToRight)
@@ -437,6 +437,37 @@ class Ui_MainWindow(object):
         self.tpSpinBoxLabel.setGeometry(QtCore.QRect(530, 230, 111, 31))
         self.tpSpinBoxLabel.setStyleSheet("font: 75 14pt \"Adobe Gothic Std B\";")
         self.tpSpinBoxLabel.setObjectName("tpSpinBoxLabel")
+        self.cancelAllButton = QtWidgets.QPushButton(self.centralwidget)
+        self.cancelAllButton.setGeometry(QtCore.QRect(30, 530, 91, 85))
+        font = QtGui.QFont()
+        font.setFamily("Adobe Gothic Std B")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(9)
+        self.cancelAllButton.setFont(font)
+        self.cancelAllButton.setStyleSheet("border-color: rgb(0, 0, 0);\n"
+                                           "background-color: rgb(255, 34, 34);\n"
+                                           "font: 75 14pt \"Adobe Gothic Std B\";")
+        self.cancelAllButton.setObjectName("cancelAllButton")
+        self.accBalance = QtWidgets.QLineEdit(self.centralwidget)
+        self.accBalance.setGeometry(QtCore.QRect(30, 60, 191, 41))
+        self.accBalance.setStyleSheet("font: 75 14pt \"Adobe Gothic Std B\";")
+        self.accBalance.setReadOnly(True)
+        self.accBalance.setObjectName("accBalance")
+        self.riskCost = QtWidgets.QLineEdit(self.centralwidget)
+        self.riskCost.setGeometry(QtCore.QRect(230, 60, 91, 41))
+        self.riskCost.setStyleSheet("font: 75 14pt \"Adobe Gothic Std B\";")
+        self.riskCost.setReadOnly(True)
+        self.riskCost.setObjectName("riskCost")
+        self.accBalanceLabel = QtWidgets.QLabel(self.centralwidget)
+        self.accBalanceLabel.setGeometry(QtCore.QRect(30, 20, 181, 31))
+        self.accBalanceLabel.setStyleSheet("font: 75 14pt \"Adobe Gothic Std B\";")
+        self.accBalanceLabel.setObjectName("accBalanceLabel")
+        self.riskCostLabel = QtWidgets.QLabel(self.centralwidget)
+        self.riskCostLabel.setGeometry(QtCore.QRect(230, 20, 91, 31))
+        self.riskCostLabel.setStyleSheet("font: 75 14pt \"Adobe Gothic Std B\";")
+        self.riskCostLabel.setObjectName("riskCostLabel")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 886, 21))
@@ -452,33 +483,52 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Spooks FX"))
-        self.setRiskButton.setText(_translate("MainWindow", "Set \nRisk"))
-        self.setStopButton.setText(_translate("MainWindow", "Set \nSL"))
-        self.setTargetButton.setText(_translate("MainWindow", "Set \nTP"))
-        self.openTradeButton.setText(_translate("MainWindow", "Open \nTrade"))
-        self.openOrderButton.setText(_translate("MainWindow", "Open \nOrder"))
-        self.doubleOrderButton.setText(_translate("MainWindow", "Double \nOrder"))
-        self.closeCustomButton.setText(_translate("MainWindow", "Close \nCustom"))
-        self.closeAllButton.setText(_translate("MainWindow", "Close \nAll"))
-        self.closeHalfButton.setText(_translate("MainWindow", "Close \nHalf"))
-        self.autoBeButton.setText(_translate("MainWindow", "Auto \nBE"))
+        self.setRiskButton.setText(_translate("MainWindow", "Set \n"
+                                                            "Risk"))
+        self.setStopButton.setText(_translate("MainWindow", "Set \n"
+                                                            "SL"))
+        self.setTargetButton.setText(_translate("MainWindow", "Set \n"
+                                                              "TP"))
+        self.openTradeButton.setText(_translate("MainWindow", "Open \n"
+                                                              "Trade"))
+        self.openOrderButton.setText(_translate("MainWindow", "Open \n"
+                                                              "Order"))
+        self.doubleOrderButton.setText(_translate("MainWindow", "Double \n"
+                                                                "Order"))
+        self.closeCustomButton.setText(_translate("MainWindow", "Close \n"
+                                                                "Custom"))
+        self.closeAllButton.setText(_translate("MainWindow", "Close \n"
+                                                             "All"))
+        self.closeHalfButton.setText(_translate("MainWindow", "Close \n"
+                                                              "Half"))
+        self.autoBeButton.setText(_translate("MainWindow", "Auto\n"
+                                                           " BE"))
         self.runnerButton.setText(_translate("MainWindow", "Runner"))
-        self.partialTPButton.setText(_translate("MainWindow", "Partial \nTP"))
-        self.targetAtRatioButton.setText(_translate("MainWindow", "TP \n@ 1 : X"))
-        self.halfRiskButton.setText(_translate("MainWindow", "Half \nRisk"))
-        self.getPositionsButton.setText(_translate("MainWindow", "Get \nPositions"))
-        self.getOrdersButton.setText(_translate("MainWindow", "Get \nOrders"))
+        self.partialTPButton.setText(_translate("MainWindow", "Partial \n"
+                                                              "TP"))
+        self.targetAtRatioButton.setText(_translate("MainWindow", "TP \n"
+                                                                  "@ 1 : X"))
+        self.halfRiskButton.setToolTip(_translate("MainWindow", "<html><head/><body><p><br/></p></body></html>"))
+        self.halfRiskButton.setText(_translate("MainWindow", "Half \n"
+                                                             "Risk"))
+        self.getPositionsButton.setText(_translate("MainWindow", "Get \n"
+                                                                 "Positions"))
+        self.getOrdersButton.setText(_translate("MainWindow", "Get\n"
+                                                              " Orders"))
         self.contractComboBox.setItemText(0, _translate("MainWindow", "GTC"))
         self.contractComboBox.setItemText(1, _translate("MainWindow", "Today"))
         self.contractComboBox.setItemText(2, _translate("MainWindow", "Specified"))
         self.mainPriceLabel.setText(_translate("MainWindow", "Price"))
         self.mainRiskLabel.setText(_translate("MainWindow", "Risk"))
-        self.checkPosButton.setText(_translate("MainWindow", "Check \nPosition"))
-        self.setPriceButton.setText(_translate("MainWindow", "Set \nPrice"))
+        self.checkPosButton.setText(_translate("MainWindow", "Check \n"
+                                                             "Position"))
+        self.setPriceButton.setText(_translate("MainWindow", "Set \n"
+                                                             "Price"))
         self.entryPriceLabel.setText(_translate("MainWindow", "Entry Price"))
         self.stopLossLabel.setText(_translate("MainWindow", "Stop Loss"))
         self.takeProfitLabel.setText(_translate("MainWindow", "Take Profit"))
-        self.setDevButton.setText(_translate("MainWindow", "Set \nDev"))
+        self.setDevButton.setText(_translate("MainWindow", "Set \n"
+                                                           "Dev"))
         self.orderTypeComboBox.setItemText(0, _translate("MainWindow", "Buy"))
         self.orderTypeComboBox.setItemText(1, _translate("MainWindow", "Sell"))
         self.orderTypeComboBox.setItemText(2, _translate("MainWindow", "Buy Limit"))
@@ -488,6 +538,10 @@ class Ui_MainWindow(object):
         self.riskLabel.setText(_translate("MainWindow", "Risk"))
         self.devLabel.setText(_translate("MainWindow", "Dev"))
         self.tpSpinBoxLabel.setText(_translate("MainWindow", "TP 1 : X"))
+        self.cancelAllButton.setText(_translate("MainWindow", "Cancel \n"
+                                                              "All"))
+        self.accBalanceLabel.setText(_translate("MainWindow", "Account Balance"))
+        self.riskCostLabel.setText(_translate("MainWindow", "Risk Cost"))
 
 
 if __name__ == "__main__":
