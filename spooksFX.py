@@ -1,9 +1,7 @@
-from datetime import datetime
-import time
-import MetaTrader5 as mt5
-import sys
-from enum import Enum
 import importlib
+from enum import Enum
+
+import MetaTrader5 as mt5
 
 calc = importlib.import_module("Trading Tool")
 
@@ -26,6 +24,7 @@ calc = importlib.import_module("Trading Tool")
 #   Modify the the get_order / get_pos funcs to also show percent risk in that trade
 #   Make the functions that print to the terminal clear the terminal each call
 #   Implement the GTC feature where you can alter the contract fill time
+#   Make symbol a class attribute
 
 
 class TradeSession:
@@ -138,7 +137,7 @@ class TradeSession:
         for count, order in enumerate(mt5.positions_get()):
             print(f"   Position {count + 1} - {self.Orders(mt5.TradePosition(order).type).name}")
             print(f"Ticket      : {mt5.TradePosition(order).ticket}")
-            print(f"Volume      : {mt5.TradePosition(order).volume}")
+            print(f"Volume      : {mt5.TradePosition(order).volume} @ {self.Risk.risk}% Risk")
             print(f"Open Price  : {mt5.TradePosition(order).price_open:.3f}")
             print(f"TP          : {mt5.TradePosition(order).tp:.3f}")
             print(f"SL          : {mt5.TradePosition(order).sl:.3f}")
@@ -148,7 +147,7 @@ class TradeSession:
         for count, order in enumerate(mt5.orders_get()):
             print(f"Position {count + 1} - {self.Orders(mt5.TradeOrder(order).type).name}")
             print(f"Ticket      : {mt5.TradeOrder(order).ticket}")
-            print(f"Volume      : {mt5.TradeOrder(order).volume_initial}")
+            print(f"Volume      : {mt5.TradeOrder(order).volume_initial} @ {self.Risk.risk}% Risk")
             print(f"Open Price  : {mt5.TradeOrder(order).price_open:.3f}")
             print(f"TP          : {mt5.TradeOrder(order).tp:.3f}")
             print(f"SL          : {mt5.TradeOrder(order).sl:.3f}")
@@ -686,7 +685,7 @@ class TradeSession:
                     "comment":  f"python half risk {symbol}"
                 }
 
-        result = mt5.order_send(request)
+            result = mt5.order_send(request)
 
     def runner(self):
         # Automatically closes 75% of position, sets SL to open price + 20 points and tp to local high/low
@@ -780,4 +779,23 @@ class TradeSession:
             }
             result = mt5.order_send(request)
             self.order_error_check(result)
-            
+
+    def risk_to_xreward(self, x):
+        sl = float(self.StopLoss.sl)
+        if isinstance(self.OpenPrice.price, float):
+            # if price has been given
+            price = float(self.OpenPrice.price)
+            pip_diff = round(abs(price - sl), 3)
+        else:
+            if self.OrderType.order_type in {mt5.ORDER_TYPE_BUY, mt5.ORDER_TYPE_BUY_LIMIT, mt5.ORDER_TYPE_BUY_STOP}:
+                price = mt5.symbol_info_tick('GBPJPY').ask
+                pip_diff = round(abs(price - sl), 3)
+            elif self.OrderType.order_type in {mt5.ORDER_TYPE_SELL, mt5.ORDER_TYPE_SELL_LIMIT,
+                                               mt5.ORDER_TYPE_SELL_STOP}:
+                price = mt5.symbol_info_tick('GBPJPY').bid
+                pip_diff = round(abs(price - sl), 3)
+        if self.OrderType.order_type in {mt5.ORDER_TYPE_BUY, mt5.ORDER_TYPE_BUY_LIMIT, mt5.ORDER_TYPE_BUY_STOP}:
+            self.TakeProfit.tp = round(price + (x * pip_diff), 3)
+        elif self.OrderType.order_type in {mt5.ORDER_TYPE_SELL, mt5.ORDER_TYPE_SELL_LIMIT, mt5.ORDER_TYPE_SELL_STOP}:
+            self.TakeProfit.tp = round(price - (x * pip_diff), 3)
+
