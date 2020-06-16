@@ -4,7 +4,7 @@ import MetaTrader5 as mt5
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-UI = importlib.import_module('traderUI5')
+UI = importlib.import_module('traderUI6')
 trade = importlib.import_module('spooksFX')
 tradeCalc = importlib.import_module('Trading Tool')
 
@@ -14,6 +14,8 @@ balance = mt5.account_info()._asdict()['balance']
 leverage = mt5.account_info()._asdict()['leverage']
 
 Calc = tradeCalc.TradingTool(balance=balance, leverage=leverage)
+
+# TODO If you are doing high frequency trading / scalping, need to deal with re-quotes
 
 
 class TraderControl:
@@ -28,11 +30,11 @@ class TraderControl:
 
     def set_sl(self):
         Trader.StopLoss.sl = self._view.priceSpinBox.value()
-        self._view.stopLossBox.setText(f"{Trader.StopLoss.sl}")
+        self._view.stopLossBox.setText(f"{Trader.StopLoss.sl:.3f}")
 
     def set_tp(self):
         Trader.TakeProfit.tp = self._view.priceSpinBox.value()
-        self._view.takeProfitBox.setText(f"{Trader.TakeProfit.tp}")
+        self._view.takeProfitBox.setText(f"{Trader.TakeProfit.tp:.3f}")
 
     def set_dev(self):
         Trader.Deviation.dev = self._view.riskSpinBox.value()
@@ -74,27 +76,36 @@ class TraderControl:
 
     def order_calc(self):
         # TODO if no price given, use current price
-        Trader.Volume.volume = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk)
+        Trader.Volume.volume = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk,
+                                                  verbose=True)
         Trader.check_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, Trader.Volume.volume)
 
     def exec_trade(self):
         if Trader.OrderType.order_type == mt5.ORDER_TYPE_SELL:
             sell = mt5.symbol_info_tick("GBPJPY").bid
-            lot = Calc.position_size(sell, Trader.TakeProfit.tp, Trader.Risk.risk)
+            lot = Calc.position_size(sell, Trader.TakeProfit.tp, Trader.Risk.risk, verbose=True)
             Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot)
         elif Trader.OrderType.order_type == mt5.ORDER_TYPE_BUY:
             buy = mt5.symbol_info_tick("GBPJPY").ask
-            lot = Calc.position_size(buy, Trader.TakeProfit.tp, Trader.Risk.risk)
+            lot = Calc.position_size(buy, Trader.TakeProfit.tp, Trader.Risk.risk, verbose=True)
             Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot)
 
     def exec_order(self):
         # action, symbol, open_price, lot
         if Trader.OrderType.order_type == mt5.ORDER_TYPE_BUY_STOP:
-            lot = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk)
+            lot = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk, verbose=True)
             Trader.place_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, lot)
         if Trader.OrderType.order_type == mt5.ORDER_TYPE_SELL_STOP:
-            lot = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk)
+            lot = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk, verbose=True)
             Trader.place_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, lot)
+
+    def set_tp_ratio(self):
+        Trader.risk_to_xreward(self._view.tpSpinBox.value())
+        self._view.takeProfitBox.setText(f"{Trader.TakeProfit.tp}")
+
+    def double_order(self):
+        self.exec_trade()
+        self.exec_trade()
 
     def _connectSignals(self):
         self._view.contractComboBox.currentIndexChanged.connect(lambda: self.enable_date())
@@ -114,6 +125,8 @@ class TraderControl:
         self._view.getOrdersButton.clicked.connect(lambda: Trader.get_orders())
         self._view.getPositionsButton.clicked.connect(lambda: Trader.get_positions())
         self._view.autoBeButton.clicked.connect(lambda: Trader.auto_be())
+        self._view.targetAtRatioButton.clicked.connect(lambda: self.set_tp_ratio())
+        self._view.doubleOrderButton.clicked.connect(lambda: self.double_order())
 
 
 def main():
