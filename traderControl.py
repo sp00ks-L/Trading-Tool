@@ -4,7 +4,7 @@ import MetaTrader5 as mt5
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-UI = importlib.import_module('traderUI6')
+UI = importlib.import_module('traderUI7')
 trade = importlib.import_module('spooksFX')
 tradeCalc = importlib.import_module('Trading Tool')
 
@@ -15,6 +15,7 @@ leverage = mt5.account_info()._asdict()['leverage']
 
 Calc = tradeCalc.TradingTool(balance=balance, leverage=leverage)
 
+
 # TODO If you are doing high frequency trading / scalping, need to deal with re-quotes
 
 
@@ -23,7 +24,10 @@ class TraderControl:
     def __init__(self, view):
         """Controller initializer."""
         self._view = view
+        Trader.Risk.risk = 1.0
+        Trader.Deviation.dev = 1
         self._view.riskSpinBox.setValue(1.0)
+        self._view.accBalance.setText(f"£{balance}")
         # Connect signals and slots
         self.set_order_type()
         self._connectSignals()
@@ -43,6 +47,7 @@ class TraderControl:
     def set_risk(self):
         Trader.Risk.risk = self._view.riskSpinBox.value()
         self._view.riskBox.setText(f"{Trader.Risk.risk}")
+        self._view.riskCost.setText(f"£{round(balance * (Trader.Risk.risk / 100), 2):.2f}")
 
     def set_price(self):
         Trader.OpenPrice.price = self._view.priceSpinBox.value()
@@ -76,27 +81,27 @@ class TraderControl:
 
     def order_calc(self):
         # TODO if no price given, use current price
-        Trader.Volume.volume = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk,
+        Trader.Volume.volume = Calc.position_size(Trader.OpenPrice.price, Trader.StopLoss.sl, Trader.Risk.risk,
                                                   verbose=True)
         Trader.check_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, Trader.Volume.volume)
 
     def exec_trade(self):
         if Trader.OrderType.order_type == mt5.ORDER_TYPE_SELL:
             sell = mt5.symbol_info_tick("GBPJPY").bid
-            lot = Calc.position_size(sell, Trader.TakeProfit.tp, Trader.Risk.risk, verbose=True)
+            lot = Calc.position_size(sell, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
             Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot)
         elif Trader.OrderType.order_type == mt5.ORDER_TYPE_BUY:
             buy = mt5.symbol_info_tick("GBPJPY").ask
-            lot = Calc.position_size(buy, Trader.TakeProfit.tp, Trader.Risk.risk, verbose=True)
+            lot = Calc.position_size(buy, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
             Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot)
 
     def exec_order(self):
         # action, symbol, open_price, lot
-        if Trader.OrderType.order_type == mt5.ORDER_TYPE_BUY_STOP:
-            lot = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk, verbose=True)
+        if Trader.OrderType.order_type in {mt5.ORDER_TYPE_BUY_STOP, mt5.ORDER_TYPE_BUY_LIMIT}:
+            lot = Calc.position_size(Trader.OpenPrice.price, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
             Trader.place_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, lot)
-        if Trader.OrderType.order_type == mt5.ORDER_TYPE_SELL_STOP:
-            lot = Calc.position_size(Trader.OpenPrice.price, Trader.TakeProfit.tp, Trader.Risk.risk, verbose=True)
+        if Trader.OrderType.order_type in {mt5.ORDER_TYPE_SELL_STOP, mt5.ORDER_TYPE_SELL_LIMIT}:
+            lot = Calc.position_size(Trader.OpenPrice.price, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
             Trader.place_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, lot)
 
     def set_tp_ratio(self):
@@ -127,6 +132,7 @@ class TraderControl:
         self._view.autoBeButton.clicked.connect(lambda: Trader.auto_be())
         self._view.targetAtRatioButton.clicked.connect(lambda: self.set_tp_ratio())
         self._view.doubleOrderButton.clicked.connect(lambda: self.double_order())
+        self._view.cancelAllButton.clicked.connect(lambda: Trader.cancel_all())
 
 
 def main():
