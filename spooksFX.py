@@ -1,7 +1,7 @@
 import importlib
 from enum import Enum
-
 import MetaTrader5 as mt5
+import os
 
 calc = importlib.import_module("Trading Tool")
 
@@ -12,27 +12,29 @@ calc = importlib.import_module("Trading Tool")
 
 # TODO
 #   Create a 'you didnt fill this in' error message to be called when no TP, SL etc is entered
-#   Create a function that sets a TP corresponding to a specific risk : reward
 #   Make ' or " consistent
 #   Look into the enumerate function auto starting at 1 rather than the count + 1 in get_positions and get_orders
 #   Think about if we want modify_order() to use the inbuilt modify call or if we want to 'modify'
 #       by cancelling the order and 're-ordering'. This would allow a modification of volume too
 #   Check which requests need deviation and/or type_time and type_filling
 #   Getter doesnt want to return 3dp, will have to do it in place and check if 2dp is okay
-#   Check if setting TP to 0 will leave the TP empty. If not, what does
 #   Maybe add 'doc strings' and 'func strings'
-#   Modify the the get_order / get_pos funcs to also show percent risk in that trade
+#   Check if the current_risk calc in get_pos works correctly
 #   Make the functions that print to the terminal clear the terminal each call
 #   Implement the GTC feature where you can alter the contract fill time
 #   Make symbol a class attribute
-
+#   Review the nested ifs in the cancel_all function. Dont think we need any of them
+#   Double check the TP levels are being calculated correctly in runner
+#   Think about moving the position size calculator from Trading Tool.py to spooksFX
+#   Reorder everything in all files to make more sense
+#   Change everything to use the self.symbol so it is attached to the class
 
 class TradeSession:
 
-    def __init__(self, magic):
+    def __init__(self, magic, symbol):
         mt5.initialize()
         self.magic = magic
-        self.symbol = "GBPJPY"
+        self.symbol = symbol
 
     class Orders(Enum):
         BUY = 0
@@ -130,14 +132,23 @@ class TradeSession:
             self._orderType = value
 
     @staticmethod
+    def clear_screen():
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+    @staticmethod
     def get_info(symbol):
         return mt5.symbol_info(symbol)
 
     def get_positions(self):
+        # TODO check the current risk calc works correctly
         for count, order in enumerate(mt5.positions_get()):
+            pip_diff = abs((mt5.TradePosition(order).price_open - mt5.TradePosition(order).sl) * 100)
+            max_loss = round(
+                (pip_diff * (mt5.TradePosition(order).volume * (0.01 / mt5.TradePosition(order).sl))) * 100000, 2)
+            current_risk = round((max_loss / balance) * 100, 2)
             print(f"   Position {count + 1} - {self.Orders(mt5.TradePosition(order).type).name}")
             print(f"Ticket      : {mt5.TradePosition(order).ticket}")
-            print(f"Volume      : {mt5.TradePosition(order).volume} @ {self.Risk.risk}% Risk")
+            print(f"Volume      : {mt5.TradePosition(order).volume} @ {current_risk}% Risk")
             print(f"Open Price  : {mt5.TradePosition(order).price_open:.3f}")
             print(f"TP          : {mt5.TradePosition(order).tp:.3f}")
             print(f"SL          : {mt5.TradePosition(order).sl:.3f}")
@@ -154,7 +165,9 @@ class TradeSession:
             print("----------------------------")
 
     def check_order(self, action, symbol, open_price, lot):
+        self.clear_screen()
         # FIXME handle if Sl and TP hasn't been provided yet
+
         if action == mt5.ORDER_TYPE_BUY:
             price = mt5.symbol_info_tick(symbol).ask
             request = {
@@ -205,8 +218,8 @@ class TradeSession:
 
     def open_trade(self, action, symbol, lot):
         mt5.initialize()
-        print("it is reaching open_trade()")
-
+        if not all(isinstance(i, float) for i in [self.TakeProfit.tp, self.Deviation.dev]):
+            return -1
         if action == mt5.ORDER_TYPE_BUY:
             trade_type = mt5.ORDER_TYPE_BUY
             price = mt5.symbol_info_tick(symbol).ask
@@ -244,13 +257,11 @@ class TradeSession:
 
             }
         result = mt5.order_send(request)
-
-        self.order_error_check(result)
+        return self.order_error_check(result)
 
     def place_order(self, action, symbol, open_price, lot):
         point = mt5.symbol_info(symbol).point
         price = open_price
-        print("entered the place_order()")
         if action == mt5.ORDER_TYPE_BUY_LIMIT:
             trade_type = mt5.ORDER_TYPE_BUY_LIMIT
 
@@ -261,7 +272,7 @@ class TradeSession:
                 "type":         trade_type,
                 "price":        price,
                 "sl":           self.StopLoss.sl,
-                "tp":           self.StopLoss.sl,
+                "tp":           self.TakeProfit.tp,
                 "type_time":    mt5.ORDER_TIME_GTC,
                 "type_filling": mt5.ORDER_FILLING_RETURN,
                 "magic":        self.magic,
@@ -321,6 +332,7 @@ class TradeSession:
 
             }
         result = mt5.order_send(request)
+        return self.order_error_check(result)
 
     def modify_order(self, ticket, open_price):
         mt5.initialize()
@@ -382,7 +394,6 @@ class TradeSession:
         print("No Open Positions")
 
     def cancel_all(self):
-        # TODO Do I need these nested ifs, just have while orders_get(), send close requests
         while mt5.orders_get():
             pos = mt5.orders_get()[0]  # FIXME Again check if this can be done better without [0]
             position_id = mt5.TradeOrder(pos).ticket
@@ -535,6 +546,7 @@ class TradeSession:
                         "comment":      f"python close half {symbol}"
                     }
                 result = mt5.order_send(request)
+
         else:
             for pos in mt5.positions_get(ticket=ticket):
                 position_id = mt5.TradePosition(pos).ticket
@@ -573,6 +585,7 @@ class TradeSession:
                         "comment":      f"python close half {symbol}"
                     }
                 result = mt5.order_send(request)
+                self.order_error_check(result)
 
     def close_custom_volume(self, vol, ticket=1):
         if ticket == 1:
@@ -686,10 +699,9 @@ class TradeSession:
                 }
 
             result = mt5.order_send(request)
+            self.order_error_check(result)
 
     def runner(self):
-        # Automatically closes 75% of position, sets SL to open price + 20 points and tp to local high/low
-        # TODO Double check the TP levels are being calculated correctly
         for pos in mt5.positions_get():
             position_id = mt5.TradePosition(pos).ticket
             symbol = mt5.TradePosition(pos).symbol
@@ -749,12 +761,14 @@ class TradeSession:
         if result is not None and result.retcode != mt5.TRADE_RETCODE_DONE:
             print(f"Order_send failed.  Retcode :   {result.retcode}")
             result_dict = result._asdict()
-            for field in result_dict.keys():
-                print(f"{field}  -   {result_dict[field]}")
-                if field == "request":
-                    traderequest_dict = result_dict[field]._asdict()
-                    for item in traderequest_dict:
-                        print(f"Trade request: {item}   -   {traderequest_dict[item]}")
+            # msg = ""
+            # for field in result_dict.keys():
+            #     msg += f"{field}  -   {result_dict[field]}\n"
+                # if field == "request":
+                #     traderequest_dict = result_dict[field]._asdict()
+                #     for item in traderequest_dict:
+                #         print(f"Trade request: {item}   -   {traderequest_dict[item]}")
+            return result_dict
         elif result is not None and result.retcode == mt5.TRADE_RETCODE_DONE:
             print("Order_send() successful")
 
@@ -781,6 +795,8 @@ class TradeSession:
             self.order_error_check(result)
 
     def risk_to_xreward(self, x):
+        if not isinstance(self.StopLoss.sl, float):
+            return -1
         sl = float(self.StopLoss.sl)
         if isinstance(self.OpenPrice.price, float):
             # if price has been given
@@ -798,4 +814,3 @@ class TradeSession:
             self.TakeProfit.tp = round(price + (x * pip_diff), 3)
         elif self.OrderType.order_type in {mt5.ORDER_TYPE_SELL, mt5.ORDER_TYPE_SELL_LIMIT, mt5.ORDER_TYPE_SELL_STOP}:
             self.TakeProfit.tp = round(price - (x * pip_diff), 3)
-
