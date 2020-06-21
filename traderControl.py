@@ -1,15 +1,18 @@
 import sys
 import importlib
 import MetaTrader5 as mt5
+import threading
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QErrorMessage, QMessageBox
 
-UI = importlib.import_module('traderUI7')
+UI = importlib.import_module('traderUI9')
+# UI = importlib.import_module('traderUITest')
 trade = importlib.import_module('spooksFX')
 tradeCalc = importlib.import_module('Trading Tool')
 
 # TODO  IF YOU CHANGE 'Trader' EVERYTHING NEEDS CHANGING
-Trader = trade.TradeSession(916848650)
+Trader = trade.TradeSession(magic=916848650, symbol="GBPJPY")
 balance = mt5.account_info()._asdict()['balance']
 leverage = mt5.account_info()._asdict()['leverage']
 
@@ -27,10 +30,22 @@ class TraderControl:
         Trader.Risk.risk = 1.0
         Trader.Deviation.dev = 1
         self._view.riskSpinBox.setValue(1.0)
-        self._view.accBalance.setText(f"£{balance}")
+        self._view.accBalance.setText(f"£{balance:.2f}")
+        self._view.symbolDisplay.setText(f"{Trader.symbol}")
+        self.get_prices()
         # Connect signals and slots
         self.set_order_type()
         self._connectSignals()
+
+    def get_prices(self):
+        symbol = 'GBPJPY'
+        bid = mt5.symbol_info_tick(symbol).bid
+        ask = mt5.symbol_info_tick(symbol).ask
+        spread = round(abs(ask - bid) * 1000)
+        threading.Timer(1.0, self.get_prices).start()
+        self._view.askPriceDisplay.setText(f"{ask:.3f}")
+        self._view.bidPriceDisplay.setText(f"{bid:.3f}")
+        self._view.spreadDisplay.setText(f"{spread}")
 
     def set_sl(self):
         Trader.StopLoss.sl = self._view.priceSpinBox.value()
@@ -80,37 +95,96 @@ class TraderControl:
             self._view.priceSpinBox.setValue(mt5.symbol_info_tick('GBPJPY').ask)
 
     def order_calc(self):
-        # TODO if no price given, use current price
         Trader.Volume.volume = Calc.position_size(Trader.OpenPrice.price, Trader.StopLoss.sl, Trader.Risk.risk,
                                                   verbose=True)
         Trader.check_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, Trader.Volume.volume)
 
     def exec_trade(self):
-        if Trader.OrderType.order_type == mt5.ORDER_TYPE_SELL:
-            sell = mt5.symbol_info_tick("GBPJPY").bid
-            lot = Calc.position_size(sell, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
-            Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot)
-        elif Trader.OrderType.order_type == mt5.ORDER_TYPE_BUY:
-            buy = mt5.symbol_info_tick("GBPJPY").ask
-            lot = Calc.position_size(buy, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
-            Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot)
+        # if Trader.OrderType.order_type == mt5.ORDER_TYPE_BUY:
+        #     buy = mt5.symbol_info_tick("GBPJPY").ask
+        #     lot = Calc.position_size(buy, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
+        #     if lot or Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot):
+        #         self.error_popup("SL, TP and/or deviation")
+        #     Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot)
+        # elif Trader.OrderType.order_type == mt5.ORDER_TYPE_SELL:
+        #     sell = mt5.symbol_info_tick("GBPJPY").bid
+        #     lot = Calc.position_size(sell, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
+        #     if lot or Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot):
+        #         self.error_popup("SL, TP and/or deviation")
+        #     Trader.open_trade(Trader.OrderType.order_type, "GBPJPY", lot)
+
+        if Trader.OrderType.order_type == mt5.ORDER_TYPE_BUY:
+            price = mt5.symbol_info_tick("GBPJPY").ask
+        elif Trader.OrderType.order_type == mt5.ORDER_TYPE_SELL:
+            price = mt5.symbol_info_tick("GBPJPY").bid
+
+        lot = Calc.position_size(price, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
+        if lot == -1:
+            self.entry_error_popup("SL, TP and/or deviation")
+        result = Trader.open_trade(Trader.OrderType.order_type, 'GBPJPY', lot)
+        if isinstance(result, dict):
+            msg = ""
+            for field in result.keys():
+                if field == "request":
+                    traderequest_dict = result[field]._asdict()
+                    for item in traderequest_dict:
+                        if item == 'action':
+                            msg += f"Trade request: {item}   -   {Trader.Orders(traderequest_dict[item]).name}\n"
+                        else:
+                            msg += f"Trade request: {item}   -   {traderequest_dict[item]}\n"
+            self.order_error_popup(f"{result['comment']}\n\n{msg}")
 
     def exec_order(self):
-        # action, symbol, open_price, lot
         if Trader.OrderType.order_type in {mt5.ORDER_TYPE_BUY_STOP, mt5.ORDER_TYPE_BUY_LIMIT}:
             lot = Calc.position_size(Trader.OpenPrice.price, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
-            Trader.place_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, lot)
-        if Trader.OrderType.order_type in {mt5.ORDER_TYPE_SELL_STOP, mt5.ORDER_TYPE_SELL_LIMIT}:
+            result = Trader.place_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, lot)
+        elif Trader.OrderType.order_type in {mt5.ORDER_TYPE_SELL_STOP, mt5.ORDER_TYPE_SELL_LIMIT}:
             lot = Calc.position_size(Trader.OpenPrice.price, Trader.StopLoss.sl, Trader.Risk.risk, verbose=True)
-            Trader.place_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, lot)
+            result = Trader.place_order(Trader.OrderType.order_type, "GBPJPY", Trader.OpenPrice.price, lot)
+
+        if lot == -1:
+            self.entry_error_popup("SL, TP and/or deviation")
+        if isinstance(result, dict):
+            msg = ""
+            for field in result.keys():
+                if field == "request":
+                    traderequest_dict = result[field]._asdict()
+                    for item in traderequest_dict:
+                        if item == 'action':
+                            msg += f"Trade request: {item}   -   {Trader.Orders(traderequest_dict[item]).name}\n"
+                        else:
+                            msg += f"Trade request: {item}   -   {traderequest_dict[item]}\n"
+            self.order_error_popup(f"{result['comment']}\n\n{msg}")
 
     def set_tp_ratio(self):
-        Trader.risk_to_xreward(self._view.tpSpinBox.value())
-        self._view.takeProfitBox.setText(f"{Trader.TakeProfit.tp}")
+        if Trader.risk_to_xreward(self._view.tpSpinBox.value()):
+            self.entry_error_popup("Stop Loss")
+        else:
+            self._view.takeProfitBox.setText(f"{Trader.TakeProfit.tp}")
 
     def double_order(self):
         self.exec_trade()
         self.exec_trade()
+
+    def close_cstm(self):
+        custom_percent = self._view.closeCustomSpinBox.value()
+        Trader.close_custom_pct(custom_percent)
+
+    def entry_error_popup(self, msg):
+        error = QMessageBox()
+        error.setWindowTitle(f"Entry Error")
+        error.setIcon(QMessageBox.Warning)
+        error.setText(f"You have not entered a {msg} value")
+
+        x = error.exec_()
+
+    def order_error_popup(self, msg):
+        error = QMessageBox()
+        error.setWindowTitle(f"Order Error")
+        error.setIcon(QMessageBox.Warning)
+        error.setText(f"{msg}")
+
+        x = error.exec_()
 
     def _connectSignals(self):
         self._view.contractComboBox.currentIndexChanged.connect(lambda: self.enable_date())
@@ -133,6 +207,7 @@ class TraderControl:
         self._view.targetAtRatioButton.clicked.connect(lambda: self.set_tp_ratio())
         self._view.doubleOrderButton.clicked.connect(lambda: self.double_order())
         self._view.cancelAllButton.clicked.connect(lambda: Trader.cancel_all())
+        self._view.closeCustomButton.clicked.connect(lambda: self.close_cstm())
 
 
 def main():
