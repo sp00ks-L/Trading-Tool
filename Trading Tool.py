@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import importlib
 import MetaTrader5 as mt5
+
+
 # trade = importlib.import_module("mt5test")
 
 
@@ -76,7 +78,7 @@ class TradingTool:
 
                 rdata.append((actual_sl, exp_profit, pip_diff))
             data = {'Volume': vol, 'Margin': self.margin(vol), '1pct': [rdata[0]], '2pct': [rdata[1]],
-                    '5pct': [rdata[2]], '10pct': [rdata[3]]}
+                    '5pct':   [rdata[2]], '10pct': [rdata[3]]}
             new_df = pd.DataFrame(data)
             out = out.append(new_df)
         out.set_index('Volume', inplace=True)
@@ -96,33 +98,19 @@ class TradingTool:
     return appropriate volume to represent loss 
     '''
 
-    def position_size(self, open_price, sl, risk):
+    def position_size(self, open_price, sl, risk, verbose=True):
+        if not isinstance(sl, float):
+            return -1
         pip_diff = abs((open_price - sl) * 100)
         max_loss = round(self.balance * (risk / 100), 2)
         pos_size = round((max_loss / pip_diff) / (0.01 / sl), 4)
-        print(f"Current Balance     :   {self.balance}")
-        print(f"{risk}% Risk           :   {max_loss}")
-        print("--------------------------------------")
-        print(f"Position Size       :   {pos_size} units")
-        print(f"Standard Lot        :   {round(pos_size / 100000, 4)}")
-        print(f"Mini Lot            :   {round(pos_size / 10000, 4)}")
-        print(f"Micro Lot           :   {round(pos_size / 1000, 4)}")
-        print("--------------------------------------")
+        if verbose:
+            print(f"Current Balance     :   {self.balance}")
+            print(f"{risk}% Risk           :   {max_loss}")
+            print("--------------------------------------")
+            print(f"Position Size       :   {pos_size} units")
+            print(f"Standard Lot        :   {round(pos_size / 100000, 4)}")
+            print(f"Mini Lot            :   {round(pos_size / 10000, 4)}")
+            print(f"Micro Lot           :   {round(pos_size / 1000, 4)}")
+            print("--------------------------------------")
         return round(pos_size / 100000, 2)
-
-
-# demo = Tradingtool(balance=653.23, leverage=50)
-demo = TradingTool(balance=67255.71, leverage=50)
-# demo.buy(0.12, 138.250, 138.374, risk=2)
-# demo.sell(0.045, 135.430, 135.000, risk=2)
-# demo.entry('SELL', 134.580, output=True)
-
-
-symbol = 'GBPJPY'
-# price, lot, sl = demo.position_size(135.000, 134.900, 1)
-# print(lot)
-
-# mt5.initialize()
-# Trader = trade.TradeSession(916848650)
-# Trader.open_trade('BUY', symbol, lot, sl, 500, 5)
-# # Trader.runner(75, 10, 100)
