@@ -14,7 +14,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(886, 671)
+        MainWindow.resize(886, 902)
         palette = QtGui.QPalette()
         brush = QtGui.QBrush(QtGui.QColor(80, 240, 80))
         brush.setStyle(QtCore.Qt.SolidPattern)
@@ -572,6 +572,114 @@ class Ui_MainWindow(object):
         self.pendingOrdersLabel.setGeometry(QtCore.QRect(750, 310, 81, 21))
         self.pendingOrdersLabel.setStyleSheet("font: 75 14pt \"Adobe Gothic Std B\";")
         self.pendingOrdersLabel.setObjectName("pendingOrdersLabel")
+        self.closeFullButton = QtWidgets.QPushButton(self.centralwidget)
+        self.closeFullButton.setGeometry(QtCore.QRect(10, 620, 91, 85))
+        font = QtGui.QFont()
+        font.setFamily("Adobe Gothic Std B")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(9)
+        self.closeFullButton.setFont(font)
+        self.closeFullButton.setStyleSheet("border-color: rgb(0, 0, 0);\n"
+                                           "background-color: rgb(255, 34, 34);\n"
+                                           "font: 75 14pt \"Adobe Gothic Std B\";")
+        self.closeFullButton.setObjectName("closeFullButton")
+        self.cancelOrderButton = QtWidgets.QPushButton(self.centralwidget)
+        self.cancelOrderButton.setGeometry(QtCore.QRect(110, 620, 91, 85))
+        font = QtGui.QFont()
+        font.setFamily("Adobe Gothic Std B")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(9)
+        self.cancelOrderButton.setFont(font)
+        self.cancelOrderButton.setStyleSheet("border-color: rgb(0, 0, 0);\n"
+                                             "background-color: rgb(255, 34, 34);\n"
+                                             "font: 75 14pt \"Adobe Gothic Std B\";")
+        self.cancelOrderButton.setObjectName("cancelOrderButton")
+        self.stopLossGroupBox = QtWidgets.QGroupBox(self.centralwidget)
+        self.stopLossGroupBox.setGeometry(QtCore.QRect(590, 660, 261, 171))
+        self.stopLossGroupBox.setStyleSheet("font: 75 14pt \"Adobe Gothic Std B\";")
+        self.stopLossGroupBox.setObjectName("stopLossGroupBox")
+        self.oneMinButton = QtWidgets.QPushButton(self.stopLossGroupBox)
+        self.oneMinButton.setGeometry(QtCore.QRect(10, 30, 51, 51))
+        font = QtGui.QFont()
+        font.setFamily("Adobe Gothic Std B")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(9)
+        self.oneMinButton.setFont(font)
+        self.oneMinButton.setStyleSheet("border-color: rgb(0, 0, 0);\n"
+                                        "background-color: rgb(0, 170, 127);\n"
+                                        "font: 75 14pt \"Adobe Gothic Std B\";")
+        self.oneMinButton.setObjectName("oneMinButton")
+        self.fiveMinButton = QtWidgets.QPushButton(self.stopLossGroupBox)
+        self.fiveMinButton.setGeometry(QtCore.QRect(70, 30, 51, 51))
+        font = QtGui.QFont()
+        font.setFamily("Adobe Gothic Std B")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(9)
+        self.fiveMinButton.setFont(font)
+        self.fiveMinButton.setStyleSheet("border-color: rgb(0, 0, 0);\n"
+                                         "background-color: rgb(0, 170, 127);\n"
+                                         "font: 75 14pt \"Adobe Gothic Std B\";")
+        self.fiveMinButton.setObjectName("fiveMinButton")
+        self.fifteenMinButton = QtWidgets.QPushButton(self.stopLossGroupBox)
+        self.fifteenMinButton.setGeometry(QtCore.QRect(130, 30, 51, 51))
+        font = QtGui.QFont()
+        font.setFamily("Adobe Gothic Std B")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(9)
+        self.fifteenMinButton.setFont(font)
+        self.fifteenMinButton.setStyleSheet("border-color: rgb(0, 0, 0);\n"
+                                            "background-color: rgb(0, 170, 127);\n"
+                                            "font: 75 14pt \"Adobe Gothic Std B\";")
+        self.fifteenMinButton.setObjectName("fifteenMinButton")
+        self.thirtyMinButton = QtWidgets.QPushButton(self.stopLossGroupBox)
+        self.thirtyMinButton.setGeometry(QtCore.QRect(190, 30, 51, 51))
+        font = QtGui.QFont()
+        font.setFamily("Adobe Gothic Std B")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(9)
+        self.thirtyMinButton.setFont(font)
+        self.thirtyMinButton.setStyleSheet("border-color: rgb(0, 0, 0);\n"
+                                           "background-color: rgb(0, 170, 127);\n"
+                                           "font: 75 14pt \"Adobe Gothic Std B\";")
+        self.thirtyMinButton.setObjectName("thirtyMinButton")
+        self.oneHourButton = QtWidgets.QPushButton(self.stopLossGroupBox)
+        self.oneHourButton.setGeometry(QtCore.QRect(10, 90, 51, 51))
+        font = QtGui.QFont()
+        font.setFamily("Adobe Gothic Std B")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(9)
+        self.oneHourButton.setFont(font)
+        self.oneHourButton.setStyleSheet("border-color: rgb(0, 0, 0);\n"
+                                         "background-color: rgb(0, 170, 127);\n"
+                                         "font: 75 14pt \"Adobe Gothic Std B\";")
+        self.oneHourButton.setObjectName("oneHourButton")
+        self.fourHourButton = QtWidgets.QPushButton(self.stopLossGroupBox)
+        self.fourHourButton.setGeometry(QtCore.QRect(70, 90, 51, 51))
+        font = QtGui.QFont()
+        font.setFamily("Adobe Gothic Std B")
+        font.setPointSize(14)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(9)
+        self.fourHourButton.setFont(font)
+        self.fourHourButton.setStyleSheet("border-color: rgb(0, 0, 0);\n"
+                                          "background-color: rgb(0, 170, 127);\n"
+                                          "font: 75 14pt \"Adobe Gothic Std B\";")
+        self.fourHourButton.setObjectName("fourHourButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 886, 21))
@@ -653,6 +761,23 @@ class Ui_MainWindow(object):
         self.stopLossLabel.setText(_translate("MainWindow", "Stop Loss"))
         self.openOrdersLabel.setText(_translate("MainWindow", "Open"))
         self.pendingOrdersLabel.setText(_translate("MainWindow", "Pending"))
+        self.closeFullButton.setText(_translate("MainWindow", "Close \n"
+                                                              "Full"))
+        self.cancelOrderButton.setText(_translate("MainWindow", "Cancel \n"
+                                                                "Order"))
+        self.stopLossGroupBox.setTitle(_translate("MainWindow", "Previous Candle Levels"))
+        self.oneMinButton.setText(_translate("MainWindow", "1 \n"
+                                                           "Min"))
+        self.fiveMinButton.setText(_translate("MainWindow", "5 \n"
+                                                            "Min"))
+        self.fifteenMinButton.setText(_translate("MainWindow", "15 \n"
+                                                               "Min"))
+        self.thirtyMinButton.setText(_translate("MainWindow", "30 \n"
+                                                              "Min"))
+        self.oneHourButton.setText(_translate("MainWindow", "1 \n"
+                                                            "Hour"))
+        self.fourHourButton.setText(_translate("MainWindow", "4 \n"
+                                                             "Hour"))
 
 
 if __name__ == "__main__":
